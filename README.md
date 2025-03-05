@@ -1,103 +1,83 @@
-# webstack-go 网址导航后台系统
+# nav
 
-基于 Golang 开源的网址导航网站项目，具备完整的前后台，您可以拿来制作自己平日收藏的网址导航。
-> v1: 使用 mysql 和 redis 组件, 丰富的后端功能。 v2: 简化版无需额外组件, 使用轻量级 sqlite 数据库。
+## api文档
+- 可使用在线文档http://localhost:8080/swagger/index.html
+- 可使用工具导入doc/openapi.yaml文件查看
 
-- 前端模板: [WebStackPage](https://github.com/WebStackPage/WebStackPage.github.io)、[光年后台模板](https://gitee.com/yinqi/Light-Year-Admin-Using-Iframe-v4)
-- 后端框架: 基于 [go-nunu](https://github.com/go-nunu/nunu) 脚手架搭建
+## 关键词
+- k8s
+- podman
 
-功能：
-- [x] 新增 webstack - 导航首页
-- [x] 新增 仪表盘 (SSE）
-- [x] 新增 网站管理 - 网站分类
-- [x] 新增 网站管理 - 网站列表
-- [x] 新增 系统管理 - 自定义导航基本信息 (Logo、favicon、备案信息等）
-- [x] 新增 支持批量添加 (自动获取标题、Logo、网站描述）
-- [x] 新增 一键同步、导出功能
-- [x] 新增 由 [gorm-gen](https://github.com/go-gorm/gen) 代码生成提供支持的友好且更安全的 GORM
-- [x] 杂项 与仓库保持同步 [Docker Hub](https://hub.docker.com/r/ch3nnn/webstack-go/tags)
+## 历史版本
+*当前版本*：3.1.0 具体查看**version**文件
+- 3.1.0
+- 3.0.0
 
-## 快速开始
-
-### 一、运行环境
-
-- Golang 1.22
-- SQLite
-
-### 二、启动服务
-
-**1、二进制文件**
-
-你可以直接从[ Releases ](https://github.com/ch3nnn/webstack-go/releases)下载预先编译好的二进制文件，解压后执行:
-
-```bash
-./webstack-go -conf config/prod.yml 
+### 1.构建应用缓存镜像
+开发阶段编译调试，适用于本地**无匹配的mvn版本**构建的场景
+```
+podman build -t cr.freeb.vip/freeb/maven-cache-nav:latest -f Dockerfile.cache .
 ```
 
-> [!NOTE]
-> MacOS 在执行二进制文件时会提示：未打开“webstack-go”，因为 Apple 无法检查其是否包含恶意软件。
-> 
-> 可在“系统设置 > 隐私与安全性 > 安全性”中点击“仍然允许”，然后再次尝试执行二进制文件。
+#### 1.1 容器内构建调试
+```
+podman run -it --rm -v $(pwd)/:/app -w /app cr.freeb.vip/freeb/maven-cache-nav:latest bash
 
-
-**2、源码运行服务 (需要 Golang 环境)**
-1. 目录下执行 `go mod tidy` 拉取项目依赖库
-2. 执行 `go build -o ./bin/server ./cmd/server` 编译项目，生成可执行文件 server 
-3. 编译完执行 `./bin/server -conf=config/prod.yml` 首次启动程序之后，会生成 SQLite 数据库，并自动创建表结构
-
-
-**3、Docker 运行服务**
-#### 下载镜像
-1. docker run 运行
-```bash
-docker run -i -t --restart always -p 8000:8000 --name webstack-go -v ./data/storage:/data/app/storage ch3nnn/webstack-go:latest
 ```
 
-2. docker compose (推荐)
-```yaml
-services:
-  webstack-go:
-    stdin_open: true
-    tty: true
-    restart: always
-    ports:
-      - 8000:8000
-    container_name: webstack-go
-    image: ch3nnn/webstack-go:latest
-    volumes:
-      - ./data/storage:/data/app/storage
+### 2.构建应用镜像
+```
+podman build -t cr.freeb.vip/freeb/nav:dev -f Dockerfile .
+
+#推送到镜像仓
+podman push cr.freeb.vip/freeb/nav:dev
 ```
 
-#### 本地编译
-1. 目录下执行 `make docker` 等待启动
-   ```shell
-   CONTAINER ID   IMAGE            COMMAND      CREATED         STATUS         PORTS                    NAMES
-   5cb641ff3950 webstack-go:v2   "./server"   5 seconds ago Up 5 seconds 0.0.0.0:8000->8000/tcp webstack-go
-   ```
-2. docker container 正常运行后, 在浏览器中打开界面，链接地址：http://127.0.0.1:8000
+#### 2.1 流水线构建
 
-## 效果图
+**Jenkinsfile**
 
-> **首页**
+### 3.Helm 部署
+[Helm](https://helm.sh/zh/)是k8s模板化部署高效工具，具体查看官网教程
 
-![](.github/image/index.png)
+部署命名空间:nav
+```
+cd chart/
+helm install nav nav/ -n nav
+```
 
-> **网站分类**
+### 4.Helm 升级
 
-![](.github/image/category.png)
+部署命名空间:a-nav
 
-> **新增网站**
+```
+cd chart/
+helm upgrade nav nav/ -n nav
+```
 
-![](.github/image/add_site.png)
+### 5.Helm 卸载
 
-> **网站信息**
+部署命名空间:a-nav
 
-![](.github/image/site.png)
+```
+cd chart/
+helm uninstall nav nav/ -n a-nav
+```
 
-> **网站配置**
+### 6.Helm 调试
 
-![](.github/image/config.png)
+部署命名空间:a-nav
 
-## Star History
+```
+cd chart/
 
-[![Star History Chart](https://api.star-history.com/svg?repos=ch3nnn/webstack-go&type=Date)](https://star-history.com/#ch3nnn/webstack-go&Date)
+## 导出k8s可部署的yaml
+helm template nav nav/ -n nav > test.yaml
+
+## 直接k8s部署
+kubectl apply -f test.yaml
+
+## debug模式输出，适用于模板有问题时调试使用
+helm template nav nav/ -n a-nav--debug > test.yaml
+```
+
