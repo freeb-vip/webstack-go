@@ -4,3 +4,5 @@ storage/logs
 *.log
 deploy/docker-compose/conf
 deploy/docker-compose/data
+chart/*.yaml
+chart/nav/values-*.yaml
