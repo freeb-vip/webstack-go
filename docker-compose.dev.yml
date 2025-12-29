@@ -1,0 +1,18 @@
+version: "3.8"
+services:
+  webstack-go-dev:
+    container_name: webstack-go-dev
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./:/go/src/webstack-go
+      - /go/pkg/mod
+      - /root/.cache/go-build
+    ports:
+      - "8000:8000"
+    environment:
+      - GO111MODULE=on
+      - APP_CONF=config/local.yml
+    tty: true
+    stdin_open: true

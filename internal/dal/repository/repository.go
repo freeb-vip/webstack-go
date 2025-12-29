@@ -146,6 +146,24 @@ func autoMigrateAndInitialize(db *gorm.DB) {
 		os.Exit(0)
 	}
 
+	// 初始化默认分类
+	count, _ := query.StCategory.WithContext(ctx).Count()
+	if count == 0 {
+		if err = query.StCategory.WithContext(ctx).Create(DefaultStCategory...); err != nil {
+			fmt.Println("category migrate error")
+			os.Exit(0)
+		}
+	}
+
+	// 初始化默认站点
+	count, _ = query.StSite.WithContext(ctx).Count()
+	if count == 0 {
+		if err = query.StSite.WithContext(ctx).Create(DefaultStSite...); err != nil {
+			fmt.Println("site migrate error")
+			os.Exit(0)
+		}
+	}
+
 	_, err = query.SysConfig.WithContext(ctx).
 		Where(
 			query.SysConfig.ID.Eq(1),
@@ -159,6 +177,7 @@ func autoMigrateAndInitialize(db *gorm.DB) {
 				SiteDesc:    DefaultSiteDesc,
 				SiteFavicon: DefaultFaviconBase64,
 				SiteLogo:    DefaultLogoBase64,
+				AiToken:     "",
 			}),
 		).
 		FirstOrCreate()

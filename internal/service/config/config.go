@@ -28,5 +28,6 @@ func (s *service) GetConfig(ctx context.Context) (*v1.ConfigResp, error) {
 		SiteRecord:  conf.SiteRecord,
 		SiteLogo:    conf.SiteLogo,
 		SiteFavicon: conf.SiteFavicon,
+		AiToken:     conf.AiToken,
 	}, nil
 }

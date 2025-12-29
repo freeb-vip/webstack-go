@@ -42,6 +42,29 @@ func categoryTree(nodes []*v1.TreeNode) []*v1.TreeNode {
 	return nodes
 }
 
+// filterTree 过滤树形结构，保留已启用的分类、包含站点的分类或包含启用子分类的分类
+func filterTree(nodes []*v1.TreeNode, sites []*model.StSite) []*v1.TreeNode {
+	var filtered []*v1.TreeNode
+	for _, node := range nodes {
+		node.Child = filterTree(node.Child, sites)
+
+		// 检查当前分类下是否有站点
+		hasSite := false
+		for _, s := range sites {
+			if s.CategoryID == node.Id {
+				hasSite = true
+				break
+			}
+		}
+
+		// 如果当前分类已启用，或者有站点，或者其子分类中有被保留的，则保留当前分类
+		if node.IsUsed || hasSite || len(node.Child) > 0 {
+			filtered = append(filtered, node)
+		}
+	}
+	return filtered
+}
+
 // categorySites 将站点数据归类到分类站点中
 func categorySites(sites []*model.StSite, treeNodes []*v1.TreeNode) (data []*v1.CategorySite) {
 	for _, node := range treeNodes {
@@ -83,7 +106,8 @@ func (s *service) Index(ctx context.Context) (*v1.IndexResp, error) {
 	)
 
 	g.Go(func() (err error) {
-		categories, err = s.categoryRepo.WithContext(ctx).FindAllOrderBySort(query.StCategory.Sort.Abs(), s.categoryRepo.WhereByIsUsed(true))
+		// 获取所有分类，以便构建完整的树形结构，后续再过滤
+		categories, err = s.categoryRepo.WithContext(ctx).FindAllOrderBySort(query.StCategory.Sort.Abs())
 		return err
 	})
 
@@ -104,15 +128,17 @@ func (s *service) Index(ctx context.Context) (*v1.IndexResp, error) {
 	nodes := make([]*v1.TreeNode, len(categories))
 	for i, category := range categories {
 		nodes[i] = &v1.TreeNode{
-			Id:   category.ID,
-			Pid:  category.ParentID,
-			Name: category.Title,
-			Icon: category.Icon,
-			Sort: category.Sort,
+			Id:     category.ID,
+			Pid:    category.ParentID,
+			Name:   category.Title,
+			Icon:   category.Icon,
+			Sort:   category.Sort,
+			IsUsed: category.IsUsed,
 		}
 	}
 
-	categoryTree := categoryTree(buildTree(nodes, 0))
+	// 1. 构建完整树 2. 过滤掉未启用且无站点且无启用子节点的分类 3. 排序
+	categoryTree := categoryTree(filterTree(buildTree(nodes, 0), sites))
 	categorySites := categorySites(sites, categoryTree)
 
 	return &v1.IndexResp{
@@ -123,6 +149,7 @@ func (s *service) Index(ctx context.Context) (*v1.IndexResp, error) {
 			SiteRecord:  sysConfig.SiteRecord,
 			SiteLogo:    sysConfig.SiteLogo,
 			SiteFavicon: sysConfig.SiteFavicon,
+			AiToken:     sysConfig.AiToken,
 		},
 		About: &v1.About{
 			AboutSite:   sysConfig.AboutSite,

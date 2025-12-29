@@ -1,0 +1,30 @@
+FROM golang:1.23-bullseye
+
+ENV GOPATH=/go
+ENV PATH=$GOPATH/bin:/usr/local/go/bin:$PATH
+ENV GOPROXY=https://goproxy.cn,https://goproxy.io,direct
+
+RUN set -eux; \
+    sed -i 's/deb.debian.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apt/sources.list; \
+    sed -i 's/security.debian.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apt/sources.list; \
+    export DEBIAN_FRONTEND=noninteractive; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends git build-essential ca-certificates curl; \
+    rm -rf /var/lib/apt/lists/*
+
+# 分开安装并添加 -v 参数以获取详细错误信息
+RUN go install -v github.com/air-verse/air@v1.61.7
+RUN go install -v github.com/google/wire/cmd/wire@latest
+
+WORKDIR /go/src/webstack-go
+
+# copy module files to download deps during image build for faster startup
+COPY go.mod go.sum ./
+RUN go mod download
+
+# copy rest of files (will be overridden by volume in dev)
+COPY . .
+
+EXPOSE 8000
+
+CMD ["air", "-c", ".air.toml"]

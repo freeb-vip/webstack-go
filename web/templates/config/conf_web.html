@@ -52,6 +52,11 @@
                                     <input class="form-control" type="text" id="siteRecord" name="siteRecord" value=""
                                            placeholder="请输入备案信息"/>
                                 </div>
+                                <div class="form-group">
+                                    <label for="aiToken">AI Token (OpenAI/Metaso等)</label>
+                                    <input class="form-control" type="text" id="aiToken" name="aiToken" value=""
+                                           placeholder="请输入 AI Token (可选)"/>
+                                </div>
                                 <button type="button" id="btnSite" class="btn btn-primary">确认</button>
                             </form>
                         </div>
@@ -169,6 +174,9 @@
                 if (data.site_record) {
                     document.getElementById('siteRecord').value = data.site_record; // 备案信息
                 }
+                if (data.ai_token) {
+                    document.getElementById('aiToken').value = data.ai_token; // AI Token
+                }
                 if (data.site_logo) {// 回显Logo（Base64）
                     document.getElementById('siteLogoPreview').src = `data:image/png;base64,${data.site_logo}`;
                 } else {
@@ -225,6 +233,7 @@
         const siteKeyword = document.getElementById('siteKeyword').value; // 站点关键词
         const siteDesc = document.getElementById('siteDesc').value; // 站点描述
         const siteRecord = document.getElementById('siteRecord').value; // 备案信息
+        const aiToken = document.getElementById('aiToken').value; // AI Token
         const siteLogo = document.getElementById('siteLogo').files[0]; // 网站Logo
         const siteFavicon = document.getElementById('siteFavicon').files[0]; // 网站Favicon
 
@@ -233,6 +242,7 @@
         formData.append('site_keyword', siteKeyword);
         formData.append('site_desc', siteDesc);
         formData.append('site_record', siteRecord);
+        formData.append('ai_token', aiToken);
         if (siteLogo) {
             formData.append('logo', siteLogo);
         }

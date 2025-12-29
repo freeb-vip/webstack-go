@@ -55,7 +55,7 @@ func HandleError(ctx *gin.Context, httpCode int, err error, data interface{}) {
 }
 
 func ErrHandler404(c *gin.Context) {
-	c.HTML(http.StatusOK, "404.html", gin.H{"title": "404 Error - Page not found"})
+	c.HTML(http.StatusNotFound, "404.html", gin.H{"title": "404 Error - Page not found"})
 }
 
 type Error struct {

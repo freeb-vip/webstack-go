@@ -1,0 +1,19 @@
+# air config for webstack-go
+root = "."
+tmp_dir = "tmp"
+
+[build]
+  cmd = "go build -buildvcs=false -o ./bin/server ./cmd/server"
+  include_ext = ["go", "tpl", "tmpl", "html"]
+  bin = "bin/server"
+  include = ["."]
+  exclude = ["bin", "tmp", "vendor", ".git", "chart", "docs", "storage", "web/static"]
+  delay = 100
+  log = "stdout"
+
+[log]
+  time = true
+
+[run]
+  cmd = "./bin/server"
+  wait = 1000

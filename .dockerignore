@@ -1,2 +1,9 @@
 .git
 .idea
+.vscode
+bin
+tmp
+storage/logs
+storage/webstack-go.db
+vendor
+node_modules

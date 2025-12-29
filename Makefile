@@ -28,3 +28,11 @@ run:
 	go mod tidy
 	go build -ldflags="-s -w" -o ./bin/server ./cmd/server
 	./bin/server -conf=config/prod.yml
+
+.PHONY: dev
+dev:
+	docker compose -f docker-compose.dev.yml up
+
+.PHONY: dev-down
+dev-down:
+	docker compose -f docker-compose.dev.yml down

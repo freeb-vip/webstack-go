@@ -8,12 +8,13 @@ package v1
 import "github.com/ch3nnn/webstack-go/internal/dal/model"
 
 type TreeNode struct {
-	Id    int         // 节点ID
-	Pid   int         // 父节点ID
-	Name  string      // 节点名称
-	Icon  string      // 图标
-	Sort  int         // 排序
-	Child []*TreeNode // 获取子节点切片
+	Id     int         // 节点ID
+	Pid    int         // 父节点ID
+	Name   string      // 节点名称
+	Icon   string      // 图标
+	Sort   int         // 排序
+	IsUsed bool        // 是否启用
+	Child  []*TreeNode // 获取子节点切片
 }
 
 type CategorySite struct {
@@ -34,6 +35,7 @@ type ConfigSite struct {
 	SiteRecord  string `json:"site_record"`  // 站点备案
 	SiteLogo    string `json:"site_logo"`    // 站点logo
 	SiteFavicon string `json:"site_favicon"` // 站点favicon
+	AiToken     string `json:"ai_token"`     // AI Token
 }
 
 type IndexResp struct {

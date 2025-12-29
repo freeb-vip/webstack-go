@@ -40,12 +40,35 @@ func RequestLogMiddleware(logger *log.Logger) gin.HandlerFunc {
 
 func ResponseLogMiddleware(logger *log.Logger) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
+		// 对于静态资源或大文件，跳过响应体日志记录
+		path := ctx.Request.URL.Path
+		if len(path) >= 8 && path[:8] == "/assets/" {
+			ctx.Next()
+			return
+		}
+
 		blw := &bodyLogWriter{body: bytes.NewBufferString(""), ResponseWriter: ctx.Writer}
 		ctx.Writer = blw
 		startTime := time.Now()
 		ctx.Next()
 		duration := time.Since(startTime).String()
-		logger.WithContext(ctx).Info("Response", zap.Any("response_body", blw.body.String()), zap.Any("time", duration))
+
+		// 只记录文本类型的响应体
+		contentType := ctx.Writer.Header().Get("Content-Type")
+		isText := false
+		textTypes := []string{"application/json", "text/plain", "text/html", "text/xml"}
+		for _, t := range textTypes {
+			if len(contentType) >= len(t) && contentType[:len(t)] == t {
+				isText = true
+				break
+			}
+		}
+
+		if isText && blw.body.Len() < 1024*10 { // 限制记录大小为 10KB
+			logger.WithContext(ctx).Info("Response", zap.Any("response_body", blw.body.String()), zap.Any("time", duration))
+		} else {
+			logger.WithContext(ctx).Info("Response", zap.Any("response_body", "<binary or large data>"), zap.Any("time", duration))
+		}
 	}
 }
 
