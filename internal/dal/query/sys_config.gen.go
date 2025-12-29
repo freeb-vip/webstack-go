@@ -37,6 +37,7 @@ func newSysConfig(db *gorm.DB, opts ...gen.DOOption) sysConfig {
 	_sysConfig.SiteRecord = field.NewString(tableName, "site_record")
 	_sysConfig.SiteLogo = field.NewString(tableName, "site_logo")
 	_sysConfig.SiteFavicon = field.NewString(tableName, "site_favicon")
+	_sysConfig.AiToken = field.NewString(tableName, "ai_token")
 
 	_sysConfig.fillFieldMap()
 
@@ -57,6 +58,7 @@ type sysConfig struct {
 	SiteRecord  field.String
 	SiteLogo    field.String
 	SiteFavicon field.String
+	AiToken     field.String
 
 	fieldMap map[string]field.Expr
 }
@@ -82,6 +84,7 @@ func (s *sysConfig) updateTableName(table string) *sysConfig {
 	s.SiteDesc = field.NewString(table, "site_desc")
 	s.SiteRecord = field.NewString(table, "site_record")
 	s.SiteLogo = field.NewString(table, "site_logo")
+	s.AiToken = field.NewString(table, "ai_token")
 	s.SiteFavicon = field.NewString(table, "site_favicon")
 
 	s.fillFieldMap()
@@ -119,6 +122,7 @@ func (s *sysConfig) fillFieldMap() {
 	s.fieldMap["site_desc"] = s.SiteDesc
 	s.fieldMap["site_record"] = s.SiteRecord
 	s.fieldMap["site_logo"] = s.SiteLogo
+	s.fieldMap["ai_token"] = s.AiToken
 	s.fieldMap["site_favicon"] = s.SiteFavicon
 }
 

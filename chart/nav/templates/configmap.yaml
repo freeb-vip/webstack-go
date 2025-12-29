@@ -1,3 +1,4 @@
+{{- if .Values.config.createConfigMap }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -6,24 +7,24 @@ metadata:
     {{- include "nav.labels" . | nindent 4 }}
 data:
   local.yaml: |
-    env: prod
+    env: {{ .Values.config.data.env }}
     http:
-      host: 0.0.0.0
-      port: 8000
+      host: {{ .Values.config.data.http.host }}
+      port: {{ .Values.config.data.http.port }}
     security:
       jwt:
-        key: QQYnRFerJTSEcrfB89fw8prOaObmrch8
+        key: {{ .Values.config.data.security.jwt.key }}
     data:
       db:
         user:
-          driver: sqlite
-          dsn: storage/webstack-go.db?_busy_timeout=5000
-
+          driver: {{ .Values.config.data.data.db.user.driver }}
+          dsn: {{ .Values.config.data.data.db.user.dsn }}
     log:
-      log_level: info
-      encoding: json           # json or console
-      log_file_name: "./storage/logs/server.log"
-      max_backups: 30
-      max_age: 7
-      max_size: 1024
-      compress: true
+      log_level: {{ .Values.config.data.log.log_level }}
+      encoding: {{ .Values.config.data.log.encoding }}
+      log_file_name: {{ .Values.config.data.log.log_file_name | quote }}
+      max_backups: {{ .Values.config.data.log.max_backups }}
+      max_age: {{ .Values.config.data.log.max_age }}
+      max_size: {{ .Values.config.data.log.max_size }}
+      compress: {{ .Values.config.data.log.compress }}
+{{- end }}

@@ -1,0 +1,106 @@
+version: '3.9'
+
+services:
+  # webstack-go 应用
+  webstack-go:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+      args:
+        VERSION: 3.1.0
+        BUILD_TIME: ${BUILD_TIME:-unknown}
+        GIT_COMMIT: ${GIT_COMMIT:-unknown}
+    image: webstack-go:latest
+    container_name: webstack-go
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8000}:8000"
+    environment:
+      - APP_ENV=production
+      - APP_CONF=/app/config/local.yml
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./storage:/app/storage
+      - ./config:/app/config
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - webstack-network
+    depends_on:
+      # 可选：如果使用外部数据库，在这里添加依赖
+      # - mysql
+      # - redis
+    labels:
+      - "com.webstack-go.description=webstack-go application"
+      - "com.webstack-go.version=3.1.0"
+
+  # MySQL 数据库（可选）
+  # mysql:
+  #   image: mysql:8.0
+  #   container_name: webstack-mysql
+  #   restart: unless-stopped
+  #   ports:
+  #     - "3306:3306"
+  #   environment:
+  #     MYSQL_ROOT_PASSWORD: root_password
+  #     MYSQL_DATABASE: webstack_go
+  #     MYSQL_USER: webstack
+  #     MYSQL_PASSWORD: webstack_password
+  #     TZ: Asia/Shanghai
+  #   volumes:
+  #     - mysql-data:/var/lib/mysql
+  #   networks:
+  #     - webstack-network
+  #   healthcheck:
+  #     test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+
+  # Redis 缓存（可选）
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: webstack-redis
+  #   restart: unless-stopped
+  #   ports:
+  #     - "6379:6379"
+  #   volumes:
+  #     - redis-data:/data
+  #   networks:
+  #     - webstack-network
+  #   healthcheck:
+  #     test: ["CMD", "redis-cli", "ping"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+
+  # Nginx 反向代理（可选，用于生产环境）
+  # nginx:
+  #   image: nginx:alpine
+  #   container_name: webstack-nginx
+  #   restart: unless-stopped
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+  #     - ./nginx/conf.d:/etc/nginx/conf.d:ro
+  #     - ./nginx/ssl:/etc/nginx/ssl:ro
+  #   networks:
+  #     - webstack-network
+  #   depends_on:
+  #     - webstack-go
+
+networks:
+  webstack-network:
+    driver: bridge
+
+volumes:
+  # mysql-data:
+  #   driver: local
+  # redis-data:
+  #   driver: local

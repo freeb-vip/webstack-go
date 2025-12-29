@@ -1,11 +1,11 @@
-# Default values for nav.
+# Default values for webstack-go.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
 replicaCount: 1
 
 image:
-  repository: cr.freeb.vip/freeb/nav
+  repository: hongmaster/nav
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
   tag: "latest"
@@ -13,6 +13,10 @@ image:
 imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
+
+# Environment variables for the application
+env:
+  APP_CONF: "config/local.yml"
 
 serviceAccount:
   # Specifies whether a service account should be created
@@ -60,26 +64,44 @@ ingress:
      hosts:
        - nav.freeb.vip
 
-resources: {}
-  # We usually recommend not to specify default resources and to leave this as a conscious
-  # choice for the user. This also increases chances charts run on environments with little
-  # resources, such as Minikube. If you do want to specify resources, uncomment the following
-  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
-  # limits:
-  #   cpu: 100m
-  #   memory: 128Mi
-  # requests:
-  #   cpu: 100m
-  #   memory: 128Mi
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
 
+# 健康检查配置
 livenessProbe:
   httpGet:
     path: /
     port: http
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  successThreshold: 1
+  failureThreshold: 3
+
 readinessProbe:
   httpGet:
     path: /
     port: http
+  initialDelaySeconds: 10
+  periodSeconds: 5
+  timeoutSeconds: 3
+  successThreshold: 1
+  failureThreshold: 3
+
+startupProbe:
+  httpGet:
+    path: /
+    port: http
+  initialDelaySeconds: 0
+  periodSeconds: 5
+  timeoutSeconds: 3
+  successThreshold: 1
+  failureThreshold: 30
 
 nodeSelector: {}
 
@@ -88,7 +110,52 @@ tolerations: []
 affinity: {}
 
 persistence:
-  enabled: false
+  enabled: true
   existingClaim: ""
   storageClass: ""
+  accessMode: ReadWriteOnce
   size: 10Gi
+  # 存储路径
+  mountPath: /data/app/storage
+
+# 配置管理
+config:
+  # 是否从 values 创建 ConfigMap
+  createConfigMap: true
+  # 配置内容
+  data:
+    env: prod
+    http:
+      host: 0.0.0.0
+      port: 8000
+    security:
+      jwt:
+        # 生产环境请使用 Secret 管理
+        key: "CHANGE_ME_IN_PRODUCTION"
+    data:
+      db:
+        user:
+          driver: sqlite
+          dsn: storage/webstack-go.db?_busy_timeout=5000
+    log:
+      log_level: info
+      encoding: json
+      log_file_name: "./storage/logs/server.log"
+      max_backups: 30
+      max_age: 7
+      max_size: 1024
+      compress: true
+
+# HPA 自动扩缩容配置
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+# Pod Disruption Budget
+podDisruptionBudget:
+  enabled: false
+  minAvailable: 1
+  # maxUnavailable: 1

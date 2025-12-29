@@ -77,14 +77,35 @@ make swag
 make run
 ```
 
-### 方法三：Docker 单容器部署
+### 方法三：生产级 Docker 部署（推荐）
 
 ```bash
-# 构建镜像
-make docker
+# 1. 构建生产镜像
+make docker-build
 
-# 镜像已自动启动并监听 8000 端口
+# 或指定版本
+./scripts/build-docker.sh -t v3.1.0 -v 3.1.0
+
+# 2. 启动容器
+make docker-run
+
+# 3. 查看日志
+make docker-logs
+
+# 4. 停止容器
+make docker-stop
 ```
+
+**更多 Docker 命令**：
+```bash
+make docker-restart    # 重启容器
+make docker-shell      # 进入容器 shell
+make docker-status     # 查看容器状态
+make docker-remove     # 删除容器
+make docker-clean      # 清理 Docker 资源
+```
+
+详见 [Docker 部署指南](docs/DOCKER_GUIDE.md)
 
 ## 📁 项目结构
 
@@ -355,29 +376,95 @@ cat internal/dal/repository/st_site.mockgen.go
 
 ### 方法一：Docker 单容器（推荐开发/小型生产）
 
+#### 快速启动
+
+```bash
+# 构建镜像
+make docker-build
+
+# 运行容器
+make docker-run
+
+# 查看日志
+make docker-logs
+
+# 停止容器
+make docker-stop
+```
+
+#### 使用脚本自定义构建
+
+```bash
+# 指定版本号
+./scripts/build-docker.sh -t v3.1.0 -v 3.1.0
+
+# 构建并推送到镜像仓
+./scripts/build-docker.sh -r your-registry.com -i nav -t v3.1.0 -p
+```
+
 #### 构建镜像
 ```bash
 # 使用生产配置构建
 make docker
 
 # 或手动构建
-docker build -t webstack-go:latest .
+docker build -t hongmaster/nav:latest -f Dockerfile.prod .
 ```
 
 #### 运行容器
 ```bash
 docker run -d \
-  --name webstack-go \
+  --name nav \
   -p 8000:8000 \
-  -v /path/to/storage:/data/app/storage \
-  -v /path/to/config:/data/app/config \
-  webstack-go:latest
+  -v /path/to/storage:/app/storage \
+  -v /path/to/config:/app/config \
+  hongmaster/nav:latest
 ```
 
 #### 参数说明
 - `-p 8000:8000` 端口映射
-- `-v /path/to/storage:/data/app/storage` 挂载数据目录（持久化）
-- `-v /path/to/config:/data/app/config` 挂载配置目录
+- `-v /path/to/storage:/app/storage` 挂载数据目录（持久化）
+- `-v /path/to/config:/app/config` 挂载配置目录
+
+#### 环境变量配置
+
+容器启动时可通过环境变量设置配置文件路径：
+
+```bash
+# 使用生产配置
+docker run -d \
+  -e APP_CONF=/app/config/prod.yml \
+  -p 8000:8000 \
+  hongmaster/nav:latest
+
+# 使用自定义配置路径
+docker run -d \
+  -e APP_CONF=/custom/path/config.yml \
+  -v /my/config:/custom/path \
+  -p 8000:8000 \
+  hongmaster/nav:latest
+```
+
+**注意**：如果未设置 `APP_CONF`，容器启动脚本会自动查找以下路径：
+1. `/app/config/local.yml`（默认）
+2. `/app/config/prod.yml`
+3. `config/local.yml`
+4. `config/prod.yml`
+
+#### Docker Compose 启动
+
+```bash
+# 启动应用栈
+make docker-compose-up
+
+# 停止应用栈
+make docker-compose-down
+
+# 查看日志
+make docker-compose-logs
+```
+
+详见 [Docker 部署指南](docs/DOCKER_GUIDE.md)
 
 ### 方法二：Kubernetes + Helm（推荐大型部署）
 
@@ -390,8 +477,8 @@ docker run -d \
 
 1. **准备镜像**
    ```bash
-   docker build -t <registry>/webstack-go:v1.0.0 .
-   docker push <registry>/webstack-go:v1.0.0
+   docker build -t <registry>/nav:v1.0.0 -f Dockerfile.prod .
+   docker push <registry>/nav:v1.0.0
    ```
 
 2. **修改 Helm 值**
@@ -403,31 +490,31 @@ docker run -d \
 
 3. **创建命名空间**
    ```bash
-   kubectl create namespace nav
+   kubectl create namespace webstack-go
    ```
 
 4. **安装 Chart**
    ```bash
    cd chart/
-   helm install webstack-go nav/ -n nav -f nav/values.yaml
+   helm install webstack-go nav/ -n webstack-go -f nav/values-production.yaml
    ```
 
 5. **验证部署**
    ```bash
    # 查看 Pod
-   kubectl get pods -n nav
+   kubectl get pods -n webstack-go
    
    # 查看服务
-   kubectl get svc -n nav
+   kubectl get svc -n webstack-go
    
    # 查看 Helm 版本
-   helm list -n nav
+   helm list -n webstack-go
    ```
 
 6. **访问应用**
    ```bash
    # 通过端口转发
-   kubectl port-forward svc/webstack-go 8000:8000 -n nav
+   kubectl port-forward svc/webstack-go 8000:8000 -n webstack-go
    
    # 访问：http://localhost:8000
    ```
@@ -435,18 +522,20 @@ docker run -d \
 #### 升级部署
 ```bash
 cd chart/
-helm upgrade webstack-go nav/ -n nav -f nav/values.yaml
+helm upgrade webstack-go nav/ -n webstack-go -f nav/values-production.yaml
 ```
 
 #### 回滚部署
 ```bash
-helm rollback webstack-go -n nav
+helm rollback webstack-go -n webstack-go
 ```
 
 #### 卸载部署
 ```bash
-helm uninstall webstack-go -n nav
+helm uninstall webstack-go -n webstack-go
 ```
+
+详见 [Helm Chart 文档](chart/nav/README.md)
 
 ### 方法三：直接编译运行（仅限开发测试）
 
