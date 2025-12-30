@@ -68,39 +68,49 @@ func (s *service) i() {}
 // -----------------------------------------------------------------------------------------------------------------------------------------
 
 // tryURLWithProtocol 尝试使用不同的协议访问 URL
-// 如果 HTTPS 失败，自动尝试 HTTP
+// 优先尝试 HTTP，如果失败则尝试 HTTPS
 func tryURLWithProtocol(url string, fetchFunc func(string) error) error {
-	// 首先尝试原始 URL
-	err := fetchFunc(url)
-	if err == nil {
+	// 如果 URL 已经包含协议前缀
+	if strings.HasPrefix(url, "http://") || strings.HasPrefix(url, "https://") {
+		// 首先尝试原始 URL
+		err := fetchFunc(url)
+		if err == nil {
+			return nil
+		}
+
+		// 如果原始 URL 是 HTTPS 且失败了，尝试使用 HTTP
+		if strings.HasPrefix(url, "https://") {
+			httpURL := strings.Replace(url, "https://", "http://", 1)
+			if err := fetchFunc(httpURL); err == nil {
+				return nil
+			}
+		}
+
+		// 如果原始 URL 是 HTTP 且失败了，尝试使用 HTTPS
+		if strings.HasPrefix(url, "http://") {
+			httpsURL := strings.Replace(url, "http://", "https://", 1)
+			if err := fetchFunc(httpsURL); err == nil {
+				return nil
+			}
+		}
+
+		return err
+	}
+
+	// 如果 URL 没有协议前缀，优先尝试 HTTP，再尝试 HTTPS
+	// 尝试 HTTP
+	httpURL := "http://" + url
+	if err := fetchFunc(httpURL); err == nil {
 		return nil
 	}
 
-	// 如果原始 URL 是 HTTPS，尝试使用 HTTP
-	if strings.HasPrefix(url, "https://") {
-		httpURL := strings.Replace(url, "https://", "http://", 1)
-		if err := fetchFunc(httpURL); err == nil {
-			return nil
-		}
+	// 尝试 HTTPS
+	httpsURL := "https://" + url
+	if err := fetchFunc(httpsURL); err == nil {
+		return nil
 	}
 
-	// 如果 URL 没有协议前缀，先尝试 HTTPS，再尝试 HTTP
-	if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
-		// 尝试 HTTPS
-		httpsURL := "https://" + url
-		if err := fetchFunc(httpsURL); err == nil {
-			return nil
-		}
-
-		// 尝试 HTTP
-		httpURL := "http://" + url
-		if err := fetchFunc(httpURL); err == nil {
-			return nil
-		}
-	}
-
-	// 所有尝试都失败，返回原始错误
-	return err
+	return errors.New("failed to access URL with both http and https")
 }
 
 func getWebLogoIconBase64(url string) (string, error) {
