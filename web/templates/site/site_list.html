@@ -163,9 +163,12 @@
                                 trHtml = '<tr class="table-warning">'
                             }
 
+                            // 处理icon为空的情况
+                            let iconSrc = value.icon ? 'data:image/png;base64,' + value.icon : '/assets/static/index/images/favicon.png';
+
                             const tr = trHtml +
                                 '<td>' + value.id + '</td>' +
-                                '<td><img class="lozad img-circle" width="30" src="data:image/png;base64,' + value.icon + '" data-loaded="true"></td>' +
+                                '<td><img class="lozad img-circle" width="30" src="' + iconSrc + '" data-loaded="true"></td>' +
                                 '<td>' + value.title + '</td>' +
                                 '<td><a href="' + value.url + '" target="_blank">' + value.url + '</a></td>' +
                                 '<td>' + value.category + '</td>' +
@@ -444,18 +447,9 @@
                     '  <input autofocus="" type="number"  placeholder="请输入排序值" class="form-control"  id="sort_order" value="' + sort + '">' + <!-- 新增排序输入框 -->
                     '</div>',
                 onOpen: function () {
-                    // bootstrap-fileinput 初始化引导文件输入插件
-                    $('#file').fileinput({
-                        language: 'zh',
-                        showPreview: false,  // 显示预览
-                        maxFileSize: 2500,  // 最大文件大小
-                        initialPreviewAsData: true,
-                        initialPreview: [],  // 初始预览数据
-                        allowedFileExtensions: ["jpg", "png"],  // 允许的文件扩展名
-                        browseLabel: '选择文件', // 自定义浏览按钮标签
-                        removeLabel: '删除', // 自定义删除按钮标签
-                        showUpload: false // 隐藏上传按钮
-                    });
+                    // 不使用 bootstrap-fileinput，改用原生 file input
+                    // 移除之前的 fileinput 初始化
+                    
                     AjaxFormNoAsync(
                         "GET",
                         "/api/admin/category",
@@ -511,11 +505,25 @@
                             }
                             const formData = new FormData();
                             formData.append('id', id);
-                            formData.append('thumb', thumb);
+                            
+                            // 获取上传的文件
+                            const fileInput = document.getElementById('file');
+                            const hasNewFile = fileInput && fileInput.files && fileInput.files.length > 0;
+                            
+                            // 如果没有上传新文件，才使用旧的 thumb 值；如果上传了新文件，就不发送 thumb
+                            if (!hasNewFile && thumb) {
+                                formData.append('thumb', thumb);
+                            }
+                            
                             formData.append('title', title);
                             formData.append('url', url);
                             formData.append('description', description);
-                            formData.append('file', $("#file")[0].files[0]);
+                            
+                            // 如果有新上传的文件，添加到 FormData
+                            if (hasNewFile) {
+                                formData.append('file', fileInput.files[0]);
+                            }
+                            
                             formData.append('category_id', $("#category_id").val());
                             formData.append('sort', $("#sort_order").val()); // 添加排序值
 

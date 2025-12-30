@@ -10,6 +10,7 @@ import (
 	"crypto/tls"
 	"encoding/base64"
 	"io"
+	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 
@@ -44,7 +45,19 @@ func ResizeMultipartImgToBase64(f *multipart.FileHeader, width, height int) (bas
 	}
 	defer file.Close()
 
-	return resizeImg2Base64(file, width, height)
+	// 读取全部字节，优先尝试解码并缩放；若解码失败则直接回传原图的base64，避免回退到默认图标
+	data, readErr := ioutil.ReadAll(file)
+	if readErr != nil {
+		return "", readErr
+	}
+
+	// 尝试缩放
+	if base64Str, err = resizeImg2Base64(bytes.NewReader(data), width, height); err == nil {
+		return base64Str, nil
+	}
+
+	// 缩放失败（例如 ico/svg 等不被 imaging 支持），直接返回原始文件的 base64
+	return base64.StdEncoding.EncodeToString(data), nil
 }
 
 // ResizeURLImgToBase64 从指定的URL获取图像，并将其调整为指定的宽度和高度后，转换为Base64编码的字符串。

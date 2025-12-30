@@ -209,13 +209,13 @@
                 </div>
                 {{ else }}
                 <div class="footer-text">
-                    &copy; 2022-2025
+                    &copy; 2025-<script>document.write(new Date().getFullYear())</script>
                     <a href="/about">
-                        <strong>Freeb Nav</strong>
+                        <strong>飞比智能 </strong>
                     </a>
                     design by
-                    <a href="https://github.com/freeb-vip/webstack-go" target="_blank">
-                        <strong>Ch3nnn</strong>
+                    <a href="https://github.com/freeb-vip/webstack-go.git" target="_blank">
+                        <strong>致谢 Ch3nnn 开源</strong>
                     </a>
                 </div>
                 {{ end }}
@@ -265,35 +265,46 @@
             $(this).siblings('li').removeClass('active'); // 删除其他兄弟元素的样式
             $(this).addClass('active'); // 添加当前元素的样式
         });
-        $("a.smooth").click(function (ev) {
+        $(document).on('click', 'a.smooth', function (ev) {
             ev.preventDefault();
 
-            public_vars.$mainMenu.add(public_vars.$sidebarProfile).toggleClass('mobile-is-visible');
-            ps_destroy();
-            $("html, body").animate({
-                scrollTop: $(decodeURI($(this).attr("href"))).offset().top - 30
-            }, {
-                duration: 500,
-                easing: "swing"
-            });
+            const href = decodeURI($(this).attr("href"));
+            const category = href.startsWith('#') ? href.substring(1) : "";
+
+            if (category) {
+                // 1. 触发分类筛选逻辑
+                const $filterTag = $(`.filter-tag[data-category="${category}"]`);
+                if ($filterTag.length) {
+                    $filterTag.click();
+                } else {
+                    $('.filter-tag[data-category="all"]').click();
+                }
+
+                // 2. 更新侧边栏激活状态
+                $("#main-menu li").removeClass("active");
+                $(this).parent("li").addClass("active");
+                $(this).parents(".has-sub").addClass("active");
+
+                // 3. 移动端菜单收起
+                if (typeof public_vars !== 'undefined' && public_vars.$mainMenu.hasClass('mobile-is-visible')) {
+                    public_vars.$mainMenu.add(public_vars.$sidebarProfile).removeClass('mobile-is-visible');
+                    ps_destroy();
+                }
+
+                // 4. 平滑滚动
+                const target = document.getElementById(category);
+                if (target) {
+                    $("html, body").animate({
+                        scrollTop: $(target).offset().top - 30
+                    }, {
+                        duration: 500,
+                        easing: "swing"
+                    });
+                }
+            }
         });
         return false;
     });
-
-    var href = "";
-    var pos = 0;
-        $("a.smooth").click(function (e) {
-            $("#main-menu li").each(function () {
-                $(this).removeClass("active");
-            });
-            $(this).parent("li").addClass("active");
-            // 如果是子菜单，父菜单也要激活
-            $(this).parents(".has-sub").addClass("active");
-            
-            e.preventDefault();
-            href = decodeURI($(this).attr("href"));
-            pos = $(href).position().top - 30;
-        });
 
     // 分类筛选逻辑
     $(document).on('click', '.filter-tag', function() {
